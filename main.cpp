@@ -4,6 +4,7 @@
 #include "option.h"
 #include "correlated_snd.h"
 #include "heston_mc.h"
+#include"payoff_template.h"
 
 using namespace std;
 
@@ -48,9 +49,11 @@ int main()
     double theta = 0.019;  // Long run average volatility
     double xi = 0.61;      // "Vol of vol"
 
+    Payoff *py = new Payoff(K);
     PayOff* pPayOffCall = new PayOffCall(K);
     Option* pOption = new Option(K,r,T,pPayOffCall);
     HestonEuler hest_euler(pOption, kappa, theta, xi, rho);
+
 
     vector<double> spot_draws(num_intervals, 0.0);  // Vector of initial spot normal draws
     vector<double> vol_draws(num_intervals, 0.0);   // Vector of initial correlated vol normal draws
@@ -61,11 +64,12 @@ int main()
     double payoff_sum = 0.0;
     for (unsigned i=0; i<num_sims; i++)
     {
-        //cout << "Calculating path " << i+1 << " of " << num_sims <<endl;
+        //std::cout << "Calculating path " << i+1 << " of " << num_sims <<endl;
         generate_normal_correlation_paths(rho,spot_draws,vol_draws);
         hest_euler.calc_vol_path(vol_draws,vol_prices);
         hest_euler.calc_spot_path(spot_draws,vol_prices,spot_prices);
-        payoff_sum += pOption->payoff->operator()(spot_prices[num_intervals-1]);
+        //payoff_sum += pOption->payoff->operator()(spot_prices[num_intervals-1]);
+        payoff_sum += py->getpayoff<payoff_types::call>(spot_prices[num_intervals-1]);
     }
     double option_price = (payoff_sum/static_cast<double>(num_sims))*exp(-r*T);
     cout<<"Option Price: "<< option_price<<endl;
